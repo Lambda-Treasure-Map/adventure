@@ -22,7 +22,7 @@ if x == 1:
 
     coins = 0
 
-    id = ""
+    id = "9a251196e8f5257c04e82c40cf16c9a9fa50b5ba"
 
     r = requests.get(url=node + "/last_proof/")
     data = r.json()
