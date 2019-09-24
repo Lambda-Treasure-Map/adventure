@@ -9,22 +9,26 @@ import Config from "./config";
 class World extends React.Component {
   constructor() {
     super();
-    this.state = {
-      roomID: "",
-      title: "",
-      description: "",
-      coordinates: (0, 0),
-      exits: []
+    this.state = { 
+        currentRoom: {
+            roomID: null,
+            title: '',
+            description: '',
+            coordinates: (0, 0),
+            exits: []
+        },
+        mapGraph: {}
     };
   }
 
   componentDidMount() {
     this.start();
-    this.move();
+    // this.move();
+    this.createMap();
   }
 
   start = () => {
-    const token = localStorage.getItem("token");
+    // const token = localStorage.getItem("token");
     axios({
       url: "https://lambda-treasure-hunt.herokuapp.com/api/adv/init/",
 
@@ -35,11 +39,13 @@ class World extends React.Component {
     })
       .then(res => {
         this.setState({
-          roomID: res.data.room_id,
-          title: res.data.title,
-          description: res.data.description,
-          coordinates: res.data.coordinates,
-          exits: res.data.exits
+            currentRoom: {
+                roomID: res.data.room_id,
+                title: res.data.title,
+                description: res.data.description,
+                coordinates: res.data.coordinates,
+                exits: res.data.exits
+              }
         });
         console.log("res.data.room_id", res.data.room_id);
       })
@@ -50,12 +56,12 @@ class World extends React.Component {
   };
 
   move = direction => {
-    const token = localStorage.getItem("token");
+    // const token = localStorage.getItem("token");
     axios({
       url: `https://lambda-treasure-hunt.herokuapp.com/api/adv/move/`,
       method: "POST",
       headers: {
-        Authorization: `Token 074e3de039fb3f4bb005ccb7865facb83718aed2`
+        Authorization: `Token ${Config.appId}`
       },
       data: {
         direction: direction
@@ -64,11 +70,13 @@ class World extends React.Component {
       .then(res => {
         console.log("moving data", res.data);
         this.setState({
-          roomID: res.data.room_id,
-          title: res.data.title,
-          description: res.data.description,
-          coordinates: res.data.coordinates,
-          exits: res.data.exits
+            currentRoom: {
+                roomID: res.data.room_id,
+                title: res.data.title,
+                description: res.data.description,
+                coordinates: res.data.coordinates,
+                exits: res.data.exits
+              }
         });
       })
       .catch(err => {
@@ -76,15 +84,51 @@ class World extends React.Component {
       });
   };
 
+createMap = () => {
+    let currentRoom = this.state.currentRoom;
+    const opDir = {'n': 's', 's': 'n', 'e': 'w', 'w': 'e'};
+    let traversalPath = [];
+    let opPath = [];
+
+    while (Object.keys(this.state.mapGraph).length < 500) {
+        if (!currentRoom.room_id in this.state.mapGraph) {
+            this.setState = {
+                mapGraph: {
+                    ...this.state.mapGraph,
+                    currentRoom
+                }
+            }
+
+            if (this.state.currentRoom.exits.length === 0) {
+                let reverse = opPath.pop();
+                traversalPath.push(reverse);
+                this.move(reverse)
+            }
+
+            let exits = this.state.currentRoom.exits;
+
+            let move = exits.shift();
+
+            traversalPath.push(move);
+
+            opPath.push(opDir[move]);
+
+            this.move(move);
+        }   
+    }
+
+    console.log(this.state.mapGraph)
+}
+
   render() {
     return (
       <div>
         <div>
-          <p>Room ID: {this.state.roomID}</p>
-          <p>Title: {this.state.title}</p>
-          <p>Description: {this.state.description}</p>
-          <p>Coordinates: {this.state.coordinates}</p>
-          <p>Possible Exits: {this.state.exits}</p>
+          <p>Room ID: {this.state.currentRoom.roomID}</p>
+          <p>Title: {this.state.currentRoom.title}</p>
+          <p>Description: {this.state.currentRoom.description}</p>
+          <p>Coordinates: {this.state.currentRoom.coordinates}</p>
+          <p>Possible Exits: {this.state.currentRoom.exits}</p>
         </div>
         <div>
           <button
