@@ -55,7 +55,7 @@ class World extends React.Component {
       url: `https://lambda-treasure-hunt.herokuapp.com/api/adv/move/`,
       method: "POST",
       headers: {
-        Authorization: `Token 074e3de039fb3f4bb005ccb7865facb83718aed2`
+        Authorization: `token ${Config.appId}`
       },
       data: {
         direction: direction
