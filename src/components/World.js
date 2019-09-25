@@ -6,14 +6,6 @@ import Config from "./config";
 //set up an algorithm using the move function to traverse the map
 //while (running){ roomGraph = {roomID: [(Coordinates), {direction: nextRoomID}]}}
 
-let mapGraph = {
-  0: [(3, 5), { n: 1, s: 5, e: 3, w: 7 }],
-  1: [(3, 6), { s: 0, n: 2 }],
-  2: [(3, 7), { s: 1 }],
-  3: [(4, 5), { w: 0, e: 4 }],
-  4: [(5, 5), { w: 3 }]
-};
-
 class World extends React.Component {
   constructor() {
     super();
@@ -27,6 +19,7 @@ class World extends React.Component {
         cooldown: 15
       }
     };
+    this.move = this.move.bind(this);
   }
 
   componentDidMount() {
@@ -98,19 +91,26 @@ class World extends React.Component {
       let currentRoom = this.state.currentRoom;
       console.log(`createMap, ${JSON.stringify(currentRoom)}`);
       const opDir = { n: "s", s: "n", e: "w", w: "e" };
+      let mapGraph = {};
       let traversalPath = [];
       let opPath = [];
 
       if (mapGraph[currentRoom.roomID] !== currentRoom.roomID) {
         mapGraph[currentRoom.roomID] = currentRoom;
+        console.log("opb4", opPath);
+        opPath.splice(opPath[opPath.length - 1]);
+        console.log("opafter", opPath);
 
-        if (this.state.currentRoom.exits.length === 0) {
+        while (this.state.currentRoom.exits.length === 0) {
           let reverse = opPath.pop();
           traversalPath.push(reverse);
           this.move(reverse);
         }
 
         let exits = this.state.currentRoom.exits;
+        console.log("exitsb4", exits);
+
+        console.log("exitsafter", exits);
 
         let move = exits.shift();
 
@@ -118,13 +118,16 @@ class World extends React.Component {
 
         opPath.push(opDir[move]);
 
+        console.log("move dir", move);
+        console.log("cooldown", this.state.currentRoom.cooldown);
+        console.log("roomID", this.state.currentRoom.roomID);
         this.move(move);
-        console.log("moved");
+        console.log("move ran");
       }
 
       console.log(mapGraph);
     };
-    setInterval(map, this.state.currentRoom.cooldown * 1000);
+    setInterval(map, 16000);
   };
 
   render() {
