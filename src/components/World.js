@@ -15,7 +15,7 @@ class World extends React.Component {
             description:"",
             coordinates: (0,0),
             exits: [],
-
+            roomGraph: [],
         }
     }
 
@@ -25,7 +25,6 @@ class World extends React.Component {
     }
 
     start = () => {
-        const token = localStorage.getItem('token');
         axios({
             url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/init/',
 
@@ -42,17 +41,13 @@ class World extends React.Component {
                     coordinates: res.data.coordinates,
                     exits: res.data.exits
                 })
-                console.log('res.data.room_id', res.data.room_id)
-                
+                console.log('init response', res)
             })
             .catch(err => {
-                console.log('errors', err.response)
-                console.log('process', process.env.REACT_APP_API_KEY)
-            })
+                console.log('errors', err.response)            })
     }
 
     move = (direction) => {
-        const token = localStorage.getItem('token')
         axios({
             url: `https://lambda-treasure-hunt.herokuapp.com/api/adv/move/`, 
             method: 'POST',
@@ -71,6 +66,8 @@ class World extends React.Component {
                     description: res.data.description,
                     coordinates: res.data.coordinates,
                     exits: res.data.exits,
+                    roomGraph: Object.keys(res.data).map(key =>
+                        <p value={key}>{res.data[key]}</p>)
                 })
             })
             .catch(err => {
@@ -94,6 +91,7 @@ class World extends React.Component {
                     <button type="button" className="btn east" onClick={() => this.move('e')}>East</button>
                     <button type="button" className="btn west" onClick={() => this.move('w')}>West</button>
                 </div>
+                
             </div>
         )
     }
