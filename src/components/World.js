@@ -17,7 +17,8 @@ class World extends React.Component {
             title: '',
             description: '',
             coordinates: (0, 0),
-            exits: []
+            exits: [],
+            cooldown: "",
         },
     };
   }
@@ -44,14 +45,14 @@ class World extends React.Component {
                 title: res.data.title,
                 description: res.data.description,
                 coordinates: res.data.coordinates,
-                exits: res.data.exits
+                exits: res.data.exits,
+                cooldown: res.data.cooldown
               }
         });
         console.log("res.data.room_id", res.data.room_id);
       })
       .catch(err => {
         console.log("errors", err.response);
-        console.log("process", Config.appId);
       });
   };
 
@@ -75,7 +76,8 @@ class World extends React.Component {
                 title: res.data.title,
                 description: res.data.description,
                 coordinates: res.data.coordinates,
-                exits: res.data.exits
+                exits: res.data.exits,
+                cooldown: res.data.cooldown
               }
         });
       })
@@ -91,10 +93,11 @@ createMap = () => {
     let traversalPath = [];
     let opPath = [];
 
-    while (Object.keys(mapGraph).length < 13) {
-        console.log(`while loop`)
+    while (Object.keys(mapGraph).length < 12) {
+        console.log(Object.keys(mapGraph).length)
+        console.log('in the while')
 
-        if (!mapGraph[currentRoom.roomID] === currentRoom.roomID) {
+        if (mapGraph[currentRoom.roomID] != currentRoom.roomID) {
             mapGraph[currentRoom.roomID] = currentRoom
 
             if (this.state.currentRoom.exits.length === 0) {
@@ -127,6 +130,7 @@ createMap = () => {
           <p>Description: {this.state.currentRoom.description}</p>
           <p>Coordinates: {this.state.currentRoom.coordinates}</p>
           <p>Possible Exits: {this.state.currentRoom.exits}</p>
+          <p>Cooldown: {this.state.currentRoom.cooldown}</p>
         </div>
         <div>
           <button
