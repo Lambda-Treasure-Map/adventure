@@ -94,7 +94,7 @@ createMap = () => {
     while (Object.keys(mapGraph).length < 13) {
         console.log(`while loop`)
 
-        if (!mapGraph[currentRoom.roomID] === currentRoom.roomID) {
+        if (mapGraph[currentRoom.roomID] !== currentRoom.roomID) {
             mapGraph[currentRoom.roomID] = currentRoom
 
             if (this.state.currentRoom.exits.length === 0) {
