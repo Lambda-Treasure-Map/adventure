@@ -5,7 +5,7 @@ import Config from "./config";
 //set up the move function
 //set up an algorithm using the move function to traverse the map
 //while (running){ roomGraph = {roomID: [(Coordinates), {direction: nextRoomID}]}}
-
+let mapGraph = {};
 class World extends React.Component {
   constructor() {
     super();
@@ -19,7 +19,6 @@ class World extends React.Component {
         cooldown: 15
       }
     };
-    this.move = this.move.bind(this);
   }
 
   componentDidMount() {
@@ -91,15 +90,12 @@ class World extends React.Component {
       let currentRoom = this.state.currentRoom;
       console.log(`createMap, ${JSON.stringify(currentRoom)}`);
       const opDir = { n: "s", s: "n", e: "w", w: "e" };
-      let mapGraph = {};
       let traversalPath = [];
       let opPath = [];
 
       if (mapGraph[currentRoom.roomID] !== currentRoom.roomID) {
         mapGraph[currentRoom.roomID] = currentRoom;
-        console.log("opb4", opPath);
-        opPath.splice(opPath[opPath.length - 1]);
-        console.log("opafter", opPath);
+        localStorage.setItem("rooms", currentRoom);
 
         while (this.state.currentRoom.exits.length === 0) {
           let reverse = opPath.pop();
@@ -107,10 +103,11 @@ class World extends React.Component {
           this.move(reverse);
         }
 
-        let exits = this.state.currentRoom.exits;
-        console.log("exitsb4", exits);
+        let x = localStorage.getItem("rooms");
+        console.log(JSON.stringify(x));
 
-        console.log("exitsafter", exits);
+        let exits = this.state.currentRoom.exits;
+        console.log("exits", exits);
 
         let move = exits.shift();
 
@@ -119,7 +116,6 @@ class World extends React.Component {
         opPath.push(opDir[move]);
 
         console.log("move dir", move);
-        console.log("cooldown", this.state.currentRoom.cooldown);
         console.log("roomID", this.state.currentRoom.roomID);
         this.move(move);
         console.log("move ran");
