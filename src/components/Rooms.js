@@ -68,6 +68,9 @@ class Room {
             return this.state.w_to;
         }
     }
+    print_room_direction() {
+        return 'This is my room'
+    }
 }
 
 export default Room;
