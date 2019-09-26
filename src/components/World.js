@@ -2,10 +2,14 @@ import React from "react";
 import axios from "axios";
 import Config from "./config";
 
+import Player from './Player';
+import Room from './Room';
+import Graph from './Graph';
+
 //set up the move function
 //set up an algorithm using the move function to traverse the map
 //while (running){ roomGraph = {roomID: [(Coordinates), {direction: nextRoomID}]}}
-let mapGraph = {};
+
 class World extends React.Component {
   constructor() {
     super();
@@ -33,7 +37,8 @@ class World extends React.Component {
 
       method: "GET",
       headers: {
-        Authorization: `Token ${Config.appId}`
+        Authorization: `Token ${Config.appId}`,
+        'Content-Type': 'application/json'
       }
     })
       .then(res => {
@@ -48,6 +53,7 @@ class World extends React.Component {
           }
         });
         console.log("res.data.room_id", res.data.room_id);
+        console.log('res.data.exits', res.data.exits)
       })
       .catch(err => {
         console.log("errors", err.response);
@@ -61,7 +67,8 @@ class World extends React.Component {
       url: `https://lambda-treasure-hunt.herokuapp.com/api/adv/move/`,
       method: "POST",
       headers: {
-        Authorization: `token ${Config.appId}`
+        Authorization: `token ${Config.appId}`,
+        'Content-Type': 'application/json'
       },
       data: {
         direction: direction
@@ -86,44 +93,44 @@ class World extends React.Component {
   };
 
   createMap = () => {
+
     const map = () => {
-      let currentRoom = this.state.currentRoom;
-      console.log(`createMap, ${JSON.stringify(currentRoom)}`);
-      const opDir = { n: "s", s: "n", e: "w", w: "e" };
-      let traversalPath = [];
-      let opPath = [];
+    let traversalPath = [];
+    let reversedPath = [];
+    let mapGraph = {};
+    let oppositeDirection = {'n':'s', 's':'n', 'e':'w', 'w':'e'};
+    let roomsDictionary = {}
 
-      if (mapGraph[currentRoom.roomID] !== currentRoom.roomID) {
-        mapGraph[currentRoom.roomID] = currentRoom;
-        localStorage.setItem("rooms", currentRoom);
+    let player = new Player('Mario', this.state.currentRoom)
+    console.log('Player current room', player.state.current_room, 'Player name', player.state.name)
+    mapGraph[player.state.current_room.id] = player.state.current_room
 
-        while (this.state.currentRoom.exits.length === 0) {
-          let reverse = opPath.pop();
-          traversalPath.push(reverse);
-          this.move(reverse);
+    // let currentRoom = this.state.currentRoom;
+    //     mapGraph[currentRoom.roomID] = currentRoom;
+
+
+        if (Object.keys(mapGraph) !== player.state.current_room.id) {
+          mapGraph[player.state.current_room.id] = player.state.current_room;
+          roomsDictionary[player.state.current_room.id] = player.state.current_room;
+          let prevRoom = reversedPath.pop();
+          mapGraph[player.state.current_room.id].exits.splice(prevRoom);
         }
 
-        let x = localStorage.getItem("rooms");
-        console.log(JSON.stringify(x));
+        while (Object.keys(mapGraph[player.state.current_room.id]) === 0) {
+          let reverseDirection = reversedPath.pop();
+          traversalPath.push(reverseDirection);
+          player.travel(reverseDirection)
+        }
 
-        let exits = this.state.currentRoom.exits;
-        console.log("exits", exits);
+        let exit_direction = roomsDictionary[Object.keys(roomsDictionary[player.state.current_room.id])[0]];
+        traversalPath.push(exit_direction);
+        reversedPath.push(oppositeDirection[exit_direction])
+        player.travel(exit_direction)
 
-        let move = exits.shift();
+      console.log('mapGraph', mapGraph);
+    }
 
-        traversalPath.push(move);
-
-        opPath.push(opDir[move]);
-
-        console.log("move dir", move);
-        console.log("roomID", this.state.currentRoom.roomID);
-        this.move(move);
-        console.log("move ran");
-      }
-
-      console.log(mapGraph);
-    };
-    setInterval(map, 16000);
+    setInterval(map, 7000)
   };
 
   render() {
