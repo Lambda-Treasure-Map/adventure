@@ -60,7 +60,7 @@ class Player {
         }
       }
 
-      bfs_to_destination
+    //   bfs_to_destination
 
     
 
