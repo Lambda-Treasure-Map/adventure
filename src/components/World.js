@@ -26,6 +26,42 @@ class World extends React.Component {
     // this.move();
   }
 
+    //Receive all elements of the Rooms
+
+  //Functions: 
+  // 1. Takes current object, return possible exits +
+  // 2. Vertices = Given room: and direction: next room
+  // 3. Get Room in the Direction
+  
+  //Save the information to a file or localstorage or api
+
+//make a room Class: in the state -> n: , S: , e: , w: , 
+//mapStatetoProps from World to Class -> 
+
+bfs =(starting_vertex) => {
+  //checks the direction key in the vertices
+  let stack = []
+  let visited = Set()
+  stack.push([starting_vertex])
+  while(stack.length > 0){
+    let path = stack.shift()
+    let node = path[path.length - 1]
+    if(!visited.has(node)){
+      if('visited[roomID] = ??'){
+        return path
+      } else{
+        visited.add(node)
+        for(let connection = 0; i < Object.values(vertices[node]).length; i++){
+          copy_path = [...path]
+          copy_path.push(connection)
+          stack.push(copy_path)
+        }
+      }
+    }
+  }
+
+}
+
   start = () => {
     // const token = localStorage.getItem("token");
     axios({
