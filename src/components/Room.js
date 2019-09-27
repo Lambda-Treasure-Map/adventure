@@ -6,7 +6,6 @@ import World from './World';
 
 class Room {
     constructor(room){
-        
         this.id = room.room_id;
         this.x = null;
         this.y = null;
