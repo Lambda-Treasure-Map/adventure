@@ -2,6 +2,8 @@ import React from "react";
 import axios from "axios";
 import Config from "./config";
 
+import Player from "./Player";
+
 //set up the move function
 //set up an algorithm using the move function to traverse the map
 //while (running){ roomGraph = {roomID: [(Coordinates), {direction: nextRoomID}]}}
