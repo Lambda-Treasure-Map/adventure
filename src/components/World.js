@@ -2,9 +2,9 @@ import React from "react";
 import axios from "axios";
 import Config from "./config";
 
-import Player from './Player';
-import Room from './Room';
-import Graph from './Graph';
+import Player from './Player.js';
+import Room from './Room.js';
+import Graph from './Graph.js';
 
 //set up the move function
 //set up an algorithm using the move function to traverse the map
@@ -42,29 +42,29 @@ class World extends React.Component {
 //make a room Class: in the state -> n: , S: , e: , w: , 
 //mapStatetoProps from World to Class -> 
 
-bfs =(starting_vertex) => {
-  //checks the direction key in the vertices
-  let stack = []
-  let visited = Set()
-  stack.push([starting_vertex])
-  while(stack.length > 0){
-    let path = stack.shift()
-    let node = path[path.length - 1]
-    if(!visited.has(node)){
-      if('visited[roomID] = ??'){
-        return path
-      } else{
-        visited.add(node)
-        for(let connection = 0; i < Object.values(vertices[node]).length; i++){
-          copy_path = [...path]
-          copy_path.push(connection)
-          stack.push(copy_path)
-        }
-      }
-    }
-  }
+// bfs =(starting_vertex) => {
+//   //checks the direction key in the vertices
+//   let stack = []
+//   let visited = Set()
+//   stack.push([starting_vertex])
+//   while(stack.length > 0){
+//     let path = stack.shift()
+//     let node = path[path.length - 1]
+//     if(!visited.has(node)){
+//       if('visited[roomID] = ??'){
+//         return path
+//       } else{
+//         visited.add(node)
+//         for(let connection = 0; i < Object.values(vertices[node]).length; i++){
+//           copy_path = [...path]
+//           copy_path.push(connection)
+//           stack.push(copy_path)
+//         }
+//       }
+//     }
+//   }
 
-}
+//}
 
   start = () => {
     // const token = localStorage.getItem("token");
@@ -144,9 +144,8 @@ bfs =(starting_vertex) => {
     // let currentRoom = this.state.currentRoom;
     //     mapGraph[currentRoom.roomID] = currentRoom;
 
-
         if (Object.keys(mapGraph) !== player.state.current_room.id) {
-          mapGraph[player.state.current_room.id] = player.state.current_room;
+          mapGraph[player.state.current_room.id] = player.state.current_room.get_exits();
           roomsDictionary[player.state.current_room.id] = player.state.current_room;
           let prevRoom = reversedPath.pop();
           mapGraph[player.state.current_room.id].exits.splice(prevRoom);
