@@ -14,15 +14,16 @@ class World extends React.Component {
   constructor() {
     super();
     this.state = {
-      currentRoom: {
-        roomID: null,
-        title: "",
-        description: "",
-        coordinates: (0, 0),
-        exits: [],
-        cooldown: 15
-      }
-    };
+      currentRoom: new Room({
+            room_id: 0,
+            title: '', 
+            description: '',
+            elevation: '',
+            terrain: ''
+      }),
+      prevRoom: null,
+      cooldown: 0
+    }
   }
 
   componentDidMount() {
@@ -79,14 +80,8 @@ class World extends React.Component {
     })
       .then(res => {
         this.setState({
-          currentRoom: {
-            roomID: res.data.room_id,
-            title: res.data.title,
-            description: res.data.description,
-            coordinates: res.data.coordinates,
-            exits: res.data.exits,
-            cooldown: res.data.cooldown
-          }
+          currentRoom: new Room(res.data),
+          cooldown: res.data.cooldown
         });
         console.log("res.data.room_id", res.data.room_id);
         console.log('res.data.exits', res.data.exits)
@@ -112,16 +107,20 @@ class World extends React.Component {
     })
       .then(res => {
         console.log("moving data", res.data);
-        this.setState({
-          currentRoom: {
-            roomID: res.data.room_id,
-            title: res.data.title,
-            description: res.data.description,
-            coordinates: res.data.coordinates,
-            exits: res.data.exits,
+        if (res.data.room_id !== this.state.currentRoom.room_id) {
+          console.log('CREATING NEW ROOM')
+          this.setState({
+            currentRoom: new Room(res.data),
+            prevRoom: this.state.currentRoom,
             cooldown: res.data.cooldown
-          }
-        });
+          });
+        } else {
+          this.setState({
+            currentRoom: this.state.currentRoom.get_room_in_direction(direction),
+            prevRoom: this.state.currentRoom,
+            cooldown: res.data.cooldown
+          })
+        }
       })
       .catch(err => {
         console.log("errors in move", err.response);
@@ -145,6 +144,7 @@ class World extends React.Component {
     //     mapGraph[currentRoom.roomID] = currentRoom;
 
         if (Object.keys(mapGraph) !== player.state.current_room.id) {
+          console.log('player current room', player.state.current_room)
           mapGraph[player.state.current_room.id] = player.state.current_room.get_exits();
           roomsDictionary[player.state.current_room.id] = player.state.current_room;
           let prevRoom = reversedPath.pop();
@@ -154,13 +154,13 @@ class World extends React.Component {
         while (Object.keys(mapGraph[player.state.current_room.id]) === 0) {
           let reverseDirection = reversedPath.pop();
           traversalPath.push(reverseDirection);
-          player.travel(reverseDirection)
+          this.move(reverseDirection)
         }
 
         let exit_direction = roomsDictionary[Object.keys(roomsDictionary[player.state.current_room.id])[0]];
         traversalPath.push(exit_direction);
         reversedPath.push(oppositeDirection[exit_direction])
-        player.travel(exit_direction)
+        this.move(exit_direction)
 
       console.log('mapGraph', mapGraph);
     }
@@ -172,7 +172,7 @@ class World extends React.Component {
     return (
       <div>
         <div>
-          <p>Room ID: {this.state.currentRoom.roomID}</p>
+          <p>Room ID: {this.state.currentRoom.room_id}</p>
           <p>Title: {this.state.currentRoom.title}</p>
           <p>Description: {this.state.currentRoom.description}</p>
           <p>Coordinates: {this.state.currentRoom.coordinates}</p>

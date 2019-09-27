@@ -5,20 +5,20 @@ import World from './World';
 
 
 class Room {
-    constructor(){
-        this.state({
-            id: null,
+    constructor(room){
+        this.state = {
+            id: room.room_id,
             x: null,
             y: null,
-            title: "", 
-            description: "",
-            elevation: "", 
+            title: room.title, 
+            description: room.description,
+            elevation: room.elevation,
             n_to: null,
             s_to: null,
             e_to: null,
             w_to: null,
-            terrain: ""
-        })
+            terrain: room.terrain
+        }
     }
 
     get_exits(){
