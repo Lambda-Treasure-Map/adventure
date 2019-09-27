@@ -1,26 +1,22 @@
 import React from 'react';
 
 class Player {
-    constructor() {
-        super();
+    constructor(name, current_room) {
         this.state = {
-            new_name: name,
-            current_room: null,
+            new_name: '',
+            current_room: current_room,
 
-
-            name: null,
+            name: name,
             encumbrance: 0,
             strength: 0,
             speed: 0,
             gold: 0,
-            inventory = []
+            inventory: []
         }
     }
 
-
-
     travel(id, direction, showRooms){
-        nextRoom = this.state.current_room.get_room_in_direction(direction)
+        let nextRoom = this.state.current_room.get_room_in_direction(direction)
         if (nextRoom !== null) {
             this.state.current_room = nextRoom
             if (showRooms) {
@@ -36,29 +32,25 @@ class Player {
         return directions[direction]
     }
 
-    bfs (starting_vertex) {
-        //checks the direction key in the vertices
-        let stack = []
-        let visited = Set()
-        stack.push([starting_vertex])
-        while(stack.length > 0){
-          let path = stack.shift()
-          let node = path[path.length - 1]
-          if(!visited.has(node)){ 
-              // Ask Lukas about this 
-            if(visited_room(room_id)){
-              return path
-            } else {
-              visited.add(node)
-              for(let connection = 0; i < Object.values(vertices[node]).length; i++){
-                copy_path = [...path]
-                copy_path.push(connection)
-                stack.push(copy_path)
-              }
-            }
-          }
-        }
-      }
+    // bfs (starting_vertex) {
+    //     //checks the direction key in the vertices
+    //     let stack = []
+    //     let visited = Set()
+    //     stack.push([starting_vertex])
+    //     while(stack.length > 0){
+    //       let path = stack.shift()
+    //       let node = path[path.length - 1]
+    //       if(!visited.has(node)){ 
+    //           // Ask Lukas about this
+    //           visited.add(node)
+    //           for(let connection = 0; connection < Object.values(vertices[node]).length; connection++){
+    //             let copy_path = [...path]
+    //             copy_path.push(connection)
+    //             stack.push(copy_path)
+    //           }
+    //         }
+    //       }
+    //   }
 
     //   bfs_to_destination
 

@@ -2,25 +2,32 @@ import React from "react";
 import axios from "axios";
 import Config from "./config";
 
+<<<<<<< HEAD
 import Player from "./Player";
+=======
+import Player from './Player.js';
+import Room from './Room.js';
+import Graph from './Graph.js';
+>>>>>>> a0b1aab97c1a797269c54d52f931830d001913c6
 
 //set up the move function
 //set up an algorithm using the move function to traverse the map
 //while (running){ roomGraph = {roomID: [(Coordinates), {direction: nextRoomID}]}}
-let mapGraph = {};
+
 class World extends React.Component {
   constructor() {
     super();
     this.state = {
-      currentRoom: {
-        roomID: null,
-        title: "",
-        description: "",
-        coordinates: (0, 0),
-        exits: [],
-        cooldown: 15
-      }
-    };
+      currentRoom: new Room({
+            room_id: 0,
+            title: '', 
+            description: '',
+            elevation: '',
+            terrain: ''
+      }),
+      prevRoom: null,
+      cooldown: 0
+    }
   }
 
   componentDidMount() {
@@ -40,29 +47,29 @@ class World extends React.Component {
 //make a room Class: in the state -> n: , S: , e: , w: , 
 //mapStatetoProps from World to Class -> 
 
-bfs =(starting_vertex) => {
-  //checks the direction key in the vertices
-  let stack = []
-  let visited = Set()
-  stack.push([starting_vertex])
-  while(stack.length > 0){
-    let path = stack.shift()
-    let node = path[path.length - 1]
-    if(!visited.has(node)){
-      if('visited[roomID] = ??'){
-        return path
-      } else{
-        visited.add(node)
-        for(let connection = 0; i < Object.values(vertices[node]).length; i++){
-          copy_path = [...path]
-          copy_path.push(connection)
-          stack.push(copy_path)
-        }
-      }
-    }
-  }
+// bfs =(starting_vertex) => {
+//   //checks the direction key in the vertices
+//   let stack = []
+//   let visited = Set()
+//   stack.push([starting_vertex])
+//   while(stack.length > 0){
+//     let path = stack.shift()
+//     let node = path[path.length - 1]
+//     if(!visited.has(node)){
+//       if('visited[roomID] = ??'){
+//         return path
+//       } else{
+//         visited.add(node)
+//         for(let connection = 0; i < Object.values(vertices[node]).length; i++){
+//           copy_path = [...path]
+//           copy_path.push(connection)
+//           stack.push(copy_path)
+//         }
+//       }
+//     }
+//   }
 
-}
+//}
 
   start = () => {
     // const token = localStorage.getItem("token");
@@ -71,21 +78,17 @@ bfs =(starting_vertex) => {
 
       method: "GET",
       headers: {
-        Authorization: `Token ${Config.appId}`
+        Authorization: `Token ${Config.appId}`,
+        'Content-Type': 'application/json'
       }
     })
       .then(res => {
         this.setState({
-          currentRoom: {
-            roomID: res.data.room_id,
-            title: res.data.title,
-            description: res.data.description,
-            coordinates: res.data.coordinates,
-            exits: res.data.exits,
-            cooldown: res.data.cooldown
-          }
+          currentRoom: new Room(res.data),
+          cooldown: res.data.cooldown
         });
         console.log("res.data.room_id", res.data.room_id);
+        console.log('res.data.exits', res.data.exits)
       })
       .catch(err => {
         console.log("errors", err.response);
@@ -99,7 +102,8 @@ bfs =(starting_vertex) => {
       url: `https://lambda-treasure-hunt.herokuapp.com/api/adv/move/`,
       method: "POST",
       headers: {
-        Authorization: `token ${Config.appId}`
+        Authorization: `token ${Config.appId}`,
+        'Content-Type': 'application/json'
       },
       data: {
         direction: direction
@@ -107,16 +111,20 @@ bfs =(starting_vertex) => {
     })
       .then(res => {
         console.log("moving data", res.data);
-        this.setState({
-          currentRoom: {
-            roomID: res.data.room_id,
-            title: res.data.title,
-            description: res.data.description,
-            coordinates: res.data.coordinates,
-            exits: res.data.exits,
+        if (res.data.room_id !== this.state.currentRoom.room_id) {
+          console.log('CREATING NEW ROOM')
+          this.setState({
+            currentRoom: new Room(res.data),
+            prevRoom: this.state.currentRoom,
             cooldown: res.data.cooldown
-          }
-        });
+          });
+        } else {
+          this.setState({
+            currentRoom: this.state.currentRoom.get_room_in_direction(direction),
+            prevRoom: this.state.currentRoom,
+            cooldown: res.data.cooldown
+          })
+        }
       })
       .catch(err => {
         console.log("errors in move", err.response);
@@ -124,51 +132,51 @@ bfs =(starting_vertex) => {
   };
 
   createMap = () => {
+
     const map = () => {
-      let currentRoom = this.state.currentRoom;
-      console.log(`createMap, ${JSON.stringify(currentRoom)}`);
-      const opDir = { n: "s", s: "n", e: "w", w: "e" };
-      let traversalPath = [];
-      let opPath = [];
+    let traversalPath = [];
+    let reversedPath = [];
+    let mapGraph = {};
+    let oppositeDirection = {'n':'s', 's':'n', 'e':'w', 'w':'e'};
+    let roomsDictionary = {}
 
-      if (mapGraph[currentRoom.roomID] !== currentRoom.roomID) {
-        mapGraph[currentRoom.roomID] = currentRoom;
-        localStorage.setItem("rooms", currentRoom);
+    let player = new Player('Mario', this.state.currentRoom)
+    console.log('Player current room', player.state.current_room, 'Player name', player.state.name)
+    mapGraph[player.state.current_room.id] = player.state.current_room
 
-        while (this.state.currentRoom.exits.length === 0) {
-          let reverse = opPath.pop();
-          traversalPath.push(reverse);
-          this.move(reverse);
+    // let currentRoom = this.state.currentRoom;
+    //     mapGraph[currentRoom.roomID] = currentRoom;
+
+        if (Object.keys(mapGraph) !== player.state.current_room.id) {
+          console.log('player current room', player.state.current_room)
+          mapGraph[player.state.current_room.id] = player.state.current_room.get_exits();
+          roomsDictionary[player.state.current_room.id] = player.state.current_room;
+          let prevRoom = reversedPath.pop();
+          mapGraph[player.state.current_room.id].exits.splice(prevRoom);
         }
 
-        let x = localStorage.getItem("rooms");
-        console.log(JSON.stringify(x));
+        while (Object.keys(mapGraph[player.state.current_room.id]) === 0) {
+          let reverseDirection = reversedPath.pop();
+          traversalPath.push(reverseDirection);
+          this.move(reverseDirection)
+        }
 
-        let exits = this.state.currentRoom.exits;
-        console.log("exits", exits);
+        let exit_direction = roomsDictionary[Object.keys(roomsDictionary[player.state.current_room.id])[0]];
+        traversalPath.push(exit_direction);
+        reversedPath.push(oppositeDirection[exit_direction])
+        this.move(exit_direction)
 
-        let move = exits.shift();
+      console.log('mapGraph', mapGraph);
+    }
 
-        traversalPath.push(move);
-
-        opPath.push(opDir[move]);
-
-        console.log("move dir", move);
-        console.log("roomID", this.state.currentRoom.roomID);
-        this.move(move);
-        console.log("move ran");
-      }
-
-      console.log(mapGraph);
-    };
-    setInterval(map, 16000);
+    setInterval(map, 7000)
   };
 
   render() {
     return (
       <div>
         <div>
-          <p>Room ID: {this.state.currentRoom.roomID}</p>
+          <p>Room ID: {this.state.currentRoom.room_id}</p>
           <p>Title: {this.state.currentRoom.title}</p>
           <p>Description: {this.state.currentRoom.description}</p>
           <p>Coordinates: {this.state.currentRoom.coordinates}</p>
