@@ -2,13 +2,9 @@ import React from "react";
 import axios from "axios";
 import Config from "./config";
 
-<<<<<<< HEAD
-import Player from "./Player";
-=======
 import Player from './Player.js';
 import Room from './Room.js';
 import Graph from './Graph.js';
->>>>>>> a0b1aab97c1a797269c54d52f931830d001913c6
 
 //set up the move function
 //set up an algorithm using the move function to traverse the map
@@ -18,13 +14,14 @@ class World extends React.Component {
   constructor() {
     super();
     this.state = {
-      currentRoom: new Room({
+      currentRoom: {
             room_id: 0,
             title: '', 
             description: '',
             elevation: '',
-            terrain: ''
-      }),
+            terrain: '',
+      },
+      exits: [],
       prevRoom: null,
       cooldown: 0
     }
@@ -83,11 +80,13 @@ class World extends React.Component {
       }
     })
       .then(res => {
+        console.log('INITIAL RES LOG', res.data)
         this.setState({
           currentRoom: new Room(res.data),
-          cooldown: res.data.cooldown
+          cooldown: res.data.cooldown,
+          exits: res.data.exits
         });
-        console.log("res.data.room_id", res.data.room_id);
+        console.log("res.data.room_id", this.state.currentRoom);
         console.log('res.data.exits', res.data.exits)
       })
       .catch(err => {
@@ -111,13 +110,19 @@ class World extends React.Component {
     })
       .then(res => {
         console.log("moving data", res.data);
-        if (res.data.room_id !== this.state.currentRoom.room_id) {
+        console.log('current room ID: ', this.state)
+        if (!this.state.currentRoom.get_room_in_direction(direction)) {
+          console.log(this.state.currentRoom.get_room_in_direction())
+          console.log('GET ROOMS condition', this.state.currentRoom.get_room_in_direction(direction))
           console.log('CREATING NEW ROOM')
+          console.log(res.data.room_id, this.state.currentRoom.id)
           this.setState({
             currentRoom: new Room(res.data),
             prevRoom: this.state.currentRoom,
             cooldown: res.data.cooldown
           });
+          console.log('Previous Room: ', this.state.prevRoom)
+          this.state.prevRoom.connect_rooms(direction, this.state.currentRoom);
         } else {
           this.setState({
             currentRoom: this.state.currentRoom.get_room_in_direction(direction),
@@ -127,7 +132,7 @@ class World extends React.Component {
         }
       })
       .catch(err => {
-        console.log("errors in move", err.response);
+        console.log("errors in move", err);
       });
   };
 
@@ -141,30 +146,41 @@ class World extends React.Component {
     let roomsDictionary = {}
 
     let player = new Player('Mario', this.state.currentRoom)
-    console.log('Player current room', player.state.current_room, 'Player name', player.state.name)
-    mapGraph[player.state.current_room.id] = player.state.current_room
 
-    // let currentRoom = this.state.currentRoom;
-    //     mapGraph[currentRoom.roomID] = currentRoom;
+    console.log('Player current room', player.state.current_room, 'Player name', player.state.name, 'Current room ID', player.state.current_room.id)
+    
+    mapGraph[player.state.current_room.id] = player.state.current_room;
+    
+    roomsDictionary[player.state.current_room.id] = player.state.current_room.get_exits();
 
-        if (Object.keys(mapGraph) !== player.state.current_room.id) {
-          console.log('player current room', player.state.current_room)
-          mapGraph[player.state.current_room.id] = player.state.current_room.get_exits();
-          roomsDictionary[player.state.current_room.id] = player.state.current_room;
-          let prevRoom = reversedPath.pop();
-          mapGraph[player.state.current_room.id].exits.splice(prevRoom);
+    if (roomsDictionary[player.state.current_room.id].length === 0) {
+      console.log('EXITS!!!!!', this.state.exits)
+      roomsDictionary[player.state.current_room.id] = this.state.exits;
+    }
+    
+    console.log('ROOOOM DICTIONARY', roomsDictionary)
+  
+
+        if (!(player.state.current_room.id in Object.keys(roomsDictionary))) {
+          roomsDictionary[player.state.current_room.id] = player.state.current_room.get_exits();
+          mapGraph[player.state.current_room.id] = player.state.current_room;
+          console.log('MAPGRAPH KEY in IF', roomsDictionary[player.state.current_room.id])
+          // let prevRoom = reversedPath.pop();
+          
+          roomsDictionary[player.state.current_room.id].splice(0);
+
+          while (Object.keys(mapGraph[player.state.current_room.id]) === 0) {
+            let reverseDirection = reversedPath.pop();
+            traversalPath.push(reverseDirection);
+            this.move(reverseDirection)
+          }
+  
+          let exit_direction = roomsDictionary[Object.keys(roomsDictionary[player.state.current_room.id])[0]];
+          console.log('EXIT DIRECTION', exit_direction)
+          traversalPath.push(exit_direction);
+          reversedPath.push(oppositeDirection[exit_direction])
+          this.move(exit_direction)
         }
-
-        while (Object.keys(mapGraph[player.state.current_room.id]) === 0) {
-          let reverseDirection = reversedPath.pop();
-          traversalPath.push(reverseDirection);
-          this.move(reverseDirection)
-        }
-
-        let exit_direction = roomsDictionary[Object.keys(roomsDictionary[player.state.current_room.id])[0]];
-        traversalPath.push(exit_direction);
-        reversedPath.push(oppositeDirection[exit_direction])
-        this.move(exit_direction)
 
       console.log('mapGraph', mapGraph);
     }
