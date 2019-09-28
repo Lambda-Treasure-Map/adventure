@@ -1,24 +1,25 @@
-import World from 'World';
+import World from './World';
 
 //Purpose of Room is to isolate each Room's properties
 // Fill in Connecting Rooms
 
 
 class Room {
-    constructor(){
-        this.state({
-            id: null,
-            x: null,
-            y: null,
-            title: "", 
-            description: "",
-            elevation: "", 
-            n_to: null,
-            s_to: null,
-            e_to: null,
-            w_to: null,
-            terrain: ""
-        })
+    constructor(room){
+        
+        this.id = room.room_id;
+        this.x = null;
+        this.y = null;
+        this.title = room.title; 
+        this.description = room.description;
+        this.elevation = room.elevation;
+        this.cooldown = room.cooldown;
+        this.n_to = null;
+        this.s_to = null;
+        this.e_to = null;
+        this.w_to = null;
+        this.terrain = room.terrain;
+        
     }
 
     get_exits(){
@@ -44,7 +45,7 @@ class Room {
             connectingRoom.s_to = this
         } else if(direction === 's'){
             this.s_to = connectingRoom
-            connectingRoom.n_to = thisTypeAnnotation
+            connectingRoom.n_to = this
         } else if(direction === 'e'){
             this.e_to = connectingRoom
             connectingRoom.s_to = this
@@ -59,14 +60,17 @@ class Room {
 
     get_room_in_direction(direction) {
         if (direction === 'n') {
-            return this.state.n_to;
+            return this.n_to;
         } else if (direction === 's') {
-            return this.state.s_to;
+            return this.s_to;
         } else if (direction === 'e') {
-            return this.state.e_to;
+            return this.e_to;
         } else if (direction === 'w') {
-            return this.state.w_to;
+            return this.w_to;
         }
+    }
+    print_room_direction() {
+        return 'This is my room'
     }
 }
 

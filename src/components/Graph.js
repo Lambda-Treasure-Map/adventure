@@ -2,16 +2,14 @@ import React from 'react';
 
 class Graph {
     constructor() {
-        super();
-
         this.state = {
             rooms: {},
             visited_rooms: new Set()
         }
 
-        let fs = require('Graph.txt');
+        let fs = require('./Graph.txt');
         let data = '';
-        let fsVisited = require('Visited.txt');
+        let fsVisited = require('./Visited.txt');
         let visitedData = '';
     }
 
@@ -36,13 +34,13 @@ class Graph {
     }
 
     save_graph() {
-        fs.writeFile('Graph.txt', data, (err) => {
+        this.fs.writeFile('Graph.txt', this.data, (err) => {
             if (err) throw err;
         })
     }
 
     load_graph() {
-        fs.readFile('Graph.txt', (err, data) => { 
+        this.fs.readFile('Graph.txt', (err, data) => { 
             if (err) throw err; 
         
             console.log(data.toString()); 
@@ -50,16 +48,16 @@ class Graph {
     }
 
     save_visited() {
-        fsVisited.writeFile('Visited.txt', visitedData, (err) => {
+        this.fsVisited.writeFile('Visited.txt', this.visitedData, (err) => {
             if (err) throw err;
         })
     }
 
     load_visited() {
-        fsVisisted.readFile('Graph.txt', (err, visitedData) => { 
+        this.fsVisisted.readFile('Graph.txt', (err, visitedData) => { 
             if (err) throw err; 
         
-            console.log(data.toString()); 
+            console.log(this.data.toString()); 
         })
     }
 }
