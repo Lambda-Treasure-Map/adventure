@@ -1,7 +1,7 @@
 import React from "react";
 import axios from "axios";
 import Config from "./config";
-import SHA256 from 'crypto-js/sha256';
+import shajs from "sha.js";
 
 import Room from "./Room.js";
 
@@ -28,9 +28,10 @@ class World extends React.Component {
       inventory: [],
       name: '',
       gold: 0,
-      proof: 0,
-      difficulty: 0,
-      minedCoins: 0
+      proof: false,
+      transaction: false,
+      guess: false,
+      minedCoins: 0,
     };
   }
 
@@ -198,71 +199,83 @@ class World extends React.Component {
     });
   }
 
-  // Miner
-
-  proofOfWork = lastProof => {
-    let proof = this.state.proof;
-
-    do {
-      proof += Math.floor(Math.random(1, 21) * 5);
-      console.log(`Proof found: ${proof}`);
-    } while (this.validProof(lastProof, proof) === false);
-
-    return proof;
-  };
-
-  validProof = (lastProof, proof) => {
-    let guess = encodeURI(`${lastProof}${proof}`);
-    let guess_hash = `${SHA256(guess)}`;
-    let leadingZeros = guess_hash;
-
-    return (
-      guess_hash.substring(0, this.state.difficulty) ===
-      `${leadingZeros.padStart(this.state.difficulty + 1, "0")}`
-    );
-  };
-
-  getProof = () => {
-    axios
-      .get("https://lambda-treasure-hunt.herokuapp.com/api/bc/last_proof/", {
-        headers: {
-          Authorization: `Token ${Config.appId}`
-        }
-      })
-      .then(res => {
-        console.log(res.data);
-        this.setState({
-          proof: res.data.proof,
-          difficulty: res.data.difficulty
-        });
-      })
-      .catch(err => {
-        console.log(err);
-      });
-  };
+  // MINER
 
   mineCoin = () => {
-    let lastProof = this.state.proof;
-    let newProof = this.proofOfWork(lastProof);
-
-    axios
-      .post(
-        "https://lambda-treasure-hunt.herokuapp.com/api/bc/mine/",
-        {
-          proof: newProof
+    if (this.state.currentRoom.id === 250) {
+      let prevBlock = "";
+      axios({
+        url: 'https://lambda-treasure-hunt.herokuapp.com/api/bc/last_proof/',
+        method: 'GET',
+        headers: {
+          Authorization: `token ${Config.appId}`,
+          "Content-Type": "application/json"
         },
-        {
-          headers: {
-            Authorization: `Token ${Config.appId}`
-          }
-        }
-      )
-      .then(res => {
-        console.log("Successfully Mined a coin!", res.data);
       })
-      .catch(err => {
-        console.log(err.message);
-      });
+        .then(res => {
+          console.log(res.data);
+          let difficulty = res.data.difficulty;
+          prevBlock = JSON.stringify(res.data.proof);
+          console.log(prevBlock);
+          let p = 550867667;
+          while (this.test_proof(prevBlock, p, difficulty) !== true) {
+            if (p % 10000 === 0) {
+              console.log("p is now", p);
+            }
+            p = Math.floor(Math.random() * 1000000000);
+          }
+          console.log("proof", p);
+          this.setState({
+            proof: p
+          })
+          setTimeout(() => {
+            axios({
+              url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/mine/',
+              method: 'POST',
+              headers: {
+                Authorization: `token ${Config.appId}`,
+                "Content-Type": "application/json"
+              },
+              data: {
+                proof: p
+              }
+            })
+              .then(res => {
+                this.setState({
+                  transaction: res.data
+                })
+                console.log(res)
+              }
+                )
+              .catch(err => console.log(err));
+          }, 1000);
+        })
+        .catch(err => console.log(err));
+    }
+  };
+
+  test_proof = (block_string, proof, difficulty) => {
+    let guess = `${block_string}${proof}`;
+    let guessHash = this.hash(guess);
+    if (proof % 10000 === 0) {
+      console.log("guessHash", guessHash);
+      this.setState({
+        guess: guessHash
+      })
+    }
+
+    let startString = "";
+    for (let i = 0; i < difficulty; i++) {
+      startString += 0;
+    }
+
+    return guessHash.slice(0, difficulty) === startString;
+  };
+
+  hash = string => {
+    return shajs("sha256")
+      .update(string)
+      .digest("hex");
   };
 
   render() {
@@ -279,6 +292,7 @@ class World extends React.Component {
           <p>inventory: {this.state.inventory}</p>
           <p>Gold: {this.state.gold}</p>
           <p>Player name: {this.state.name}</p>
+          <h1>MINED COINS: {this.state.minedCoins}</h1>
         </div>
         <div>
           <button
