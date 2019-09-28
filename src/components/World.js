@@ -23,13 +23,17 @@ class World extends React.Component {
       },
       exits: [],
       prevRoom: null,
-      cooldown: 0
+      cooldown: 0,
+      itemsInRoom: [],
+      inventory: [],
+      playerName: ''
     };
   }
 
   componentDidMount() {
     this.start();
     // this.move();
+    this.seeInventory();
   }
 
   //Receive all elements of the Rooms
@@ -84,7 +88,8 @@ class World extends React.Component {
         this.setState({
           currentRoom: new Room(res.data),
           cooldown: res.data.cooldown,
-          exits: res.data.exits
+          exits: res.data.exits,
+          itemsInRoom: res.data.items
         });
         console.log("res.data.room_id", this.state.currentRoom);
         console.log("res.data.exits", res.data.exits);
@@ -141,87 +146,102 @@ class World extends React.Component {
       });
   };
 
-  createMap = () => {
-    const map = () => {
-      let traversalPath = [];
-      let reversedPath = [];
-      let mapGraph = {};
-      let oppositeDirection = { n: "s", s: "n", e: "w", w: "e" };
-      let roomsDictionary = {};
-
-      let player = new Player("Mario", this.state.currentRoom);
-
-      console.log(
-        "Player current room",
-        player.state.current_room,
-        "Player name",
-        player.state.name,
-        "Current room ID",
-        player.state.current_room.id
-      );
-
-      mapGraph[player.state.current_room.id] = player.state.current_room;
-
-      roomsDictionary[
-        player.state.current_room.id
-      ] = player.state.current_room.get_exits();
-
-      if (roomsDictionary[player.state.current_room.id].length === 0) {
-        roomsDictionary[
-          player.state.current_room.id
-        ] = player.state.current_room.init_exits();
+  pickUpItems = () => {
+    axios({
+      url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/take/',
+      method: "POST",
+      headers: {
+        Authorization: `token ${Config.appId}`,
+        "Content-Type": "application/json"
+      },
+      data: {
+        'name': this.state.itemsInRoom[0]
       }
+    })
+    .then(res => {
+      console.log('RESPONSE ITEMS', res.data.items)
+      // this.setState({
+      //   inventory: res.data.items
+      // })
+    })
+    .catch(err => {
+      console.log("errors", err.response);
+    });
+  }
 
-      if (!(player.state.current_room.id in Object.keys(roomsDictionary))) {
-
-        roomsDictionary[player.state.current_room.id] = player.state.current_room.get_exits();
-
-        console.log("getexits",roomsDictionary[player.state.current_room.id] = player.state.current_room.get_exits() )
-
-        console.log("exits length", roomsDictionary[player.state.current_room.id].length);
-
-        if (roomsDictionary[player.state.current_room.id].length === 0) {roomsDictionary[player.state.current_room.id] = player.state.current_room.init_exits();
-        }
-
-        mapGraph[player.state.current_room.id] = player.state.current_room;
-
-        
-
-        while (Object.keys(mapGraph[player.state.current_room.id]) === 0) {
-          let reverseDirection = reversedPath.pop();
-
-          traversalPath.push(reverseDirection);
-
-          this.move(reverseDirection);
-        }
-
-        let exit_direction = roomsDictionary[player.state.current_room.id][0];
-
-    
-
-        traversalPath.push(exit_direction);
-
-        reversedPath.push(oppositeDirection[exit_direction]);
-
-        this.move(exit_direction);
+  sellItems = () => {
+    axios({
+      url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/drop/',
+      method: "POST",
+      headers: {
+        Authorization: `token ${Config.appId}`,
+        "Content-Type": "application/json"
+      },
+      data: {
+        'name': this.state.itemsInRoom
       }
+    })
+    .then(res => {
+      console.log(res.items)
+      
+    })
+    .catch(err => {
+      console.log("errors", err.response);
+    });
+  }
 
-      console.log("mapGraph", mapGraph);
-    };
+  seeInventory =() => {
+    axios({
+      url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/status/',
+      method: 'POST', 
+      headers: {
+        Authorization: `token ${Config.appId}`,
+        "Content-Type": "application/json"
+      }
+    })
+    .then(res => {
+      this.setState({
+        inventory: res.data.inventory
+      })
+    })
+    .catch(err => {
+      console.log("errors", err.response);
+    });
+  }
 
-    setInterval(map, 7000);
-  };
+  changeName = newName => {
+    axios({
+      url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/change_name/',
+      headers: {
+        Authorization: `token ${Config.appId}`,
+        "Content-Type": "application/json"
+      },
+      data: {
+        'name': 'Mario'
+      }
+    })
+    .then(res => {
+      console.log(res)
+    })
+    .catch(err => {
+      console.log("errors", err.response);
+    });
+  }
+
 
   render() {
     return (
       <div>
         <div>
-          <p>Room ID: {this.state.currentRoom.room_id}</p>
+          <p>Room ID: {this.state.currentRoom.id}</p>
           <p>Title: {this.state.currentRoom.title}</p>
           <p>Description: {this.state.currentRoom.description}</p>
           <p>Coordinates: {this.state.currentRoom.coordinates}</p>
           <p>Possible Exits: {this.state.currentRoom.exits}</p>
           <p>cooldown: {this.state.currentRoom.cooldown}</p>
+          <p>Items: {this.state.itemsInRoom}</p>
+          <p>inventory: {this.state.inventory}</p>
+          {this.state.playerName && (<p>this.state.playerName</p>)}
         </div>
         <div>
           <button
@@ -252,7 +272,7 @@ class World extends React.Component {
           >
             West
           </button>
-          <button onClick={() => this.createMap()}>CREATE MAP</button>
+          <button onClick={() => this.pickUpItems()}>Pick up item</button>
         </div>
       </div>
     );
