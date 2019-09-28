@@ -5,6 +5,13 @@ import shajs from "sha.js";
 
 import Room from "./Room.js";
 
+const apiKey = Config.appId
+const authHeader = {
+  headers: {
+    Authorization: `Token ${apiKey}`
+  }
+};
+
 
 //set up the move function
 //set up an algorithm using the move function to traverse the map
@@ -216,7 +223,7 @@ class World extends React.Component {
           console.log(res.data);
           let difficulty = res.data.difficulty;
           prevBlock = JSON.stringify(res.data.proof);
-          console.log(prevBlock);
+          
           let p = 550867667;
           while (this.test_proof(prevBlock, p, difficulty) !== true) {
             if (p % 10000 === 0) {
@@ -228,18 +235,9 @@ class World extends React.Component {
           this.setState({
             proof: p
           })
+          console.log('PROOF FROM STATE', this.state.proof)
           setTimeout(() => {
-            axios({
-              url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/mine/',
-              method: 'POST',
-              headers: {
-                Authorization: `token ${Config.appId}`,
-                "Content-Type": "application/json"
-              },
-              data: {
-                proof: p
-              }
-            })
+            axios.post('https://lambda-treasure-hunt.herokuapp.com/api/bc/mine/', {proof: p}, authHeader)
               .then(res => {
                 this.setState({
                   transaction: res.data
@@ -292,7 +290,6 @@ class World extends React.Component {
           <p>inventory: {this.state.inventory}</p>
           <p>Gold: {this.state.gold}</p>
           <p>Player name: {this.state.name}</p>
-          <h1>MINED COINS: {this.state.minedCoins}</h1>
         </div>
         <div>
           <button
