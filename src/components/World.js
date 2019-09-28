@@ -1,10 +1,10 @@
 import React from "react";
 import axios from "axios";
 import Config from "./config";
+import SHA256 from 'crypto-js/sha256';
 
-import Player from "./Player.js";
 import Room from "./Room.js";
-import Graph from "./Graph.js";
+
 
 //set up the move function
 //set up an algorithm using the move function to traverse the map
@@ -26,51 +26,17 @@ class World extends React.Component {
       cooldown: 0,
       itemsInRoom: [],
       inventory: [],
-      playerName: ''
+      name: '',
+      gold: 0,
+      proof: 0,
+      difficulty: 0,
+      minedCoins: 0
     };
   }
 
   componentDidMount() {
     this.start();
-    // this.move();
-    this.seeInventory();
   }
-
-  //Receive all elements of the Rooms
-
-  //Functions:
-  // 1. Takes current object, return possible exits +
-  // 2. Vertices = Given room: and direction: next room
-  // 3. Get Room in the Direction
-
-  //Save the information to a file or localstorage or api
-
-  //make a room Class: in the state -> n: , S: , e: , w: ,
-  //mapStatetoProps from World to Class ->
-
-  // bfs =(starting_vertex) => {
-  //   //checks the direction key in the vertices
-  //   let stack = []
-  //   let visited = Set()
-  //   stack.push([starting_vertex])
-  //   while(stack.length > 0){
-  //     let path = stack.shift()
-  //     let node = path[path.length - 1]
-  //     if(!visited.has(node)){
-  //       if('visited[roomID] = ??'){
-  //         return path
-  //       } else{
-  //         visited.add(node)
-  //         for(let connection = 0; i < Object.values(vertices[node]).length; i++){
-  //           copy_path = [...path]
-  //           copy_path.push(connection)
-  //           stack.push(copy_path)
-  //         }
-  //       }
-  //     }
-  //   }
-
-  //}
 
   start = () => {
     // const token = localStorage.getItem("token");
@@ -171,19 +137,19 @@ class World extends React.Component {
 
   sellItems = () => {
     axios({
-      url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/drop/',
+      url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/sell/',
       method: "POST",
       headers: {
         Authorization: `token ${Config.appId}`,
         "Content-Type": "application/json"
       },
       data: {
-        'name': this.state.itemsInRoom
+        name: this.state.inventory[0],
+        confirm: 'yes'
       }
     })
     .then(res => {
-      console.log(res.items)
-      
+      console.log(res)
     })
     .catch(err => {
       console.log("errors", err.response);
@@ -201,7 +167,9 @@ class World extends React.Component {
     })
     .then(res => {
       this.setState({
-        inventory: res.data.inventory
+        inventory: res.data.inventory,
+        gold: res.data.gold,
+        name: res.data.name
       })
     })
     .catch(err => {
@@ -209,15 +177,17 @@ class World extends React.Component {
     });
   }
 
-  changeName = newName => {
+  changeName = () => {
     axios({
       url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/change_name/',
+      method: 'POST',
       headers: {
         Authorization: `token ${Config.appId}`,
         "Content-Type": "application/json"
       },
       data: {
-        'name': 'Mario'
+        name: 'Mario',
+        confirm: 'aye'
       }
     })
     .then(res => {
@@ -228,6 +198,72 @@ class World extends React.Component {
     });
   }
 
+  // Miner
+
+  proofOfWork = lastProof => {
+    let proof = this.state.proof;
+
+    do {
+      proof += Math.floor(Math.random(1, 21) * 5);
+      console.log(`Proof found: ${proof}`);
+    } while (this.validProof(lastProof, proof) === false);
+
+    return proof;
+  };
+
+  validProof = (lastProof, proof) => {
+    let guess = encodeURI(`${lastProof}${proof}`);
+    let guess_hash = `${SHA256(guess)}`;
+    let leadingZeros = guess_hash;
+
+    return (
+      guess_hash.substring(0, this.state.difficulty) ===
+      `${leadingZeros.padStart(this.state.difficulty + 1, "0")}`
+    );
+  };
+
+  getProof = () => {
+    axios
+      .get("https://lambda-treasure-hunt.herokuapp.com/api/bc/last_proof/", {
+        headers: {
+          Authorization: `Token ${Config.appId}`
+        }
+      })
+      .then(res => {
+        console.log(res.data);
+        this.setState({
+          proof: res.data.proof,
+          difficulty: res.data.difficulty
+        });
+      })
+      .catch(err => {
+        console.log(err);
+      });
+  };
+
+  mineCoin = () => {
+    let lastProof = this.state.proof;
+    let newProof = this.proofOfWork(lastProof);
+
+    axios
+      .post(
+        "https://lambda-treasure-hunt.herokuapp.com/api/bc/mine/",
+        {
+          proof: newProof
+        },
+        {
+          headers: {
+            Authorization: `Token ${Config.appId}`
+          }
+        }
+      )
+      .then(res => {
+        console.log("Successfully Mined a coin!", res.data);
+      })
+      .catch(err => {
+        console.log(err.message);
+      });
+  };
 
   render() {
     return (
@@ -238,10 +274,11 @@ class World extends React.Component {
           <p>Description: {this.state.currentRoom.description}</p>
           <p>Coordinates: {this.state.currentRoom.coordinates}</p>
           <p>Possible Exits: {this.state.currentRoom.exits}</p>
-          <p>cooldown: {this.state.currentRoom.cooldown}</p>
-          <p>Items: {this.state.itemsInRoom}</p>
+          <p>cooldown: {this.state.cooldown}</p>
+          <p>Available Items: {this.state.itemsInRoom}</p>
           <p>inventory: {this.state.inventory}</p>
-          {this.state.playerName && (<p>this.state.playerName</p>)}
+          <p>Gold: {this.state.gold}</p>
+          <p>Player name: {this.state.name}</p>
         </div>
         <div>
           <button
@@ -273,6 +310,10 @@ class World extends React.Component {
             West
           </button>
           <button onClick={() => this.pickUpItems()}>Pick up item</button>
+          <button onClick={() => this.seeInventory()}>See inventory</button>
+          <button onClick={() => this.sellItems()}>Sell items</button>
+          <button onClick={() => this.changeName()}>Change Name!</button>
+          <button onClick={() => this.mineCoin()}>MINE!!</button>
         </div>
       </div>
     );
