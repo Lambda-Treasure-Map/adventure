@@ -1,10 +1,17 @@
 import React from "react";
 import axios from "axios";
 import Config from "./config";
+import shajs from "sha.js";
 
-import Player from './Player.js';
-import Room from './Room.js';
-import Graph from './Graph.js';
+import Room from "./Room.js";
+
+const apiKey = Config.appId
+const authHeader = {
+  headers: {
+    Authorization: `Token ${apiKey}`
+  }
+};
+
 
 //set up the move function
 //set up an algorithm using the move function to traverse the map
@@ -15,58 +22,29 @@ class World extends React.Component {
     super();
     this.state = {
       currentRoom: {
-            room_id: 0,
-            title: '', 
-            description: '',
-            elevation: '',
-            terrain: '',
+        room_id: 0,
+        title: "",
+        description: "",
+        elevation: "",
+        terrain: ""
       },
       exits: [],
       prevRoom: null,
-      cooldown: 0
-    }
+      cooldown: 0,
+      itemsInRoom: [],
+      inventory: [],
+      name: '',
+      gold: 0,
+      proof: false,
+      transaction: false,
+      guess: false,
+      minedCoins: 0,
+    };
   }
 
   componentDidMount() {
     this.start();
-    // this.move();
   }
-
-    //Receive all elements of the Rooms
-
-  //Functions: 
-  // 1. Takes current object, return possible exits +
-  // 2. Vertices = Given room: and direction: next room
-  // 3. Get Room in the Direction
-  
-  //Save the information to a file or localstorage or api
-
-//make a room Class: in the state -> n: , S: , e: , w: , 
-//mapStatetoProps from World to Class -> 
-
-// bfs =(starting_vertex) => {
-//   //checks the direction key in the vertices
-//   let stack = []
-//   let visited = Set()
-//   stack.push([starting_vertex])
-//   while(stack.length > 0){
-//     let path = stack.shift()
-//     let node = path[path.length - 1]
-//     if(!visited.has(node)){
-//       if('visited[roomID] = ??'){
-//         return path
-//       } else{
-//         visited.add(node)
-//         for(let connection = 0; i < Object.values(vertices[node]).length; i++){
-//           copy_path = [...path]
-//           copy_path.push(connection)
-//           stack.push(copy_path)
-//         }
-//       }
-//     }
-//   }
-
-//}
 
   start = () => {
     // const token = localStorage.getItem("token");
@@ -76,18 +54,19 @@ class World extends React.Component {
       method: "GET",
       headers: {
         Authorization: `Token ${Config.appId}`,
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json"
       }
     })
       .then(res => {
-        console.log('INITIAL RES LOG', res.data)
+        console.log("INITIAL RES LOG", res.data);
         this.setState({
           currentRoom: new Room(res.data),
           cooldown: res.data.cooldown,
-          exits: res.data.exits
+          exits: res.data.exits,
+          itemsInRoom: res.data.items
         });
         console.log("res.data.room_id", this.state.currentRoom);
-        console.log('res.data.exits', res.data.exits)
+        console.log("res.data.exits", res.data.exits);
       })
       .catch(err => {
         console.log("errors", err.response);
@@ -102,7 +81,7 @@ class World extends React.Component {
       method: "POST",
       headers: {
         Authorization: `token ${Config.appId}`,
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json"
       },
       data: {
         direction: direction
@@ -110,25 +89,30 @@ class World extends React.Component {
     })
       .then(res => {
         console.log("moving data", res.data);
-        console.log('current room ID: ', this.state)
+        console.log("current room ID: ", this.state);
         if (!this.state.currentRoom.get_room_in_direction(direction)) {
-          console.log(this.state.currentRoom.get_room_in_direction())
-          console.log('GET ROOMS condition', this.state.currentRoom.get_room_in_direction(direction))
-          console.log('CREATING NEW ROOM')
-          console.log(res.data.room_id, this.state.currentRoom.id)
+          console.log(this.state.currentRoom.get_room_in_direction());
+          console.log(
+            "GET ROOMS condition",
+            this.state.currentRoom.get_room_in_direction(direction)
+          );
+          console.log("CREATING NEW ROOM");
+          console.log(res.data.room_id, this.state.currentRoom.id);
           this.setState({
             currentRoom: new Room(res.data),
             prevRoom: this.state.currentRoom,
             cooldown: res.data.cooldown
           });
-          console.log('Previous Room: ', this.state.prevRoom)
+          console.log("Previous Room: ", this.state.prevRoom);
           this.state.prevRoom.connect_rooms(direction, this.state.currentRoom);
         } else {
           this.setState({
-            currentRoom: this.state.currentRoom.get_room_in_direction(direction),
+            currentRoom: this.state.currentRoom.get_room_in_direction(
+              direction
+            ),
             prevRoom: this.state.currentRoom,
             cooldown: res.data.cooldown
-          })
+          });
         }
       })
       .catch(err => {
@@ -136,68 +120,176 @@ class World extends React.Component {
       });
   };
 
-  createMap = () => {
+  pickUpItems = () => {
+    axios({
+      url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/take/',
+      method: "POST",
+      headers: {
+        Authorization: `token ${Config.appId}`,
+        "Content-Type": "application/json"
+      },
+      data: {
+        'name': this.state.itemsInRoom[0]
+      }
+    })
+    .then(res => {
+      console.log('RESPONSE ITEMS', res.data.items)
+      // this.setState({
+      //   inventory: res.data.items
+      // })
+    })
+    .catch(err => {
+      console.log("errors", err.response);
+    });
+  }
 
-    const map = () => {
-    let traversalPath = [];
-    let reversedPath = [];
-    let mapGraph = {};
-    let oppositeDirection = {'n':'s', 's':'n', 'e':'w', 'w':'e'};
-    let roomsDictionary = {}
+  sellItems = () => {
+    axios({
+      url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/sell/',
+      method: "POST",
+      headers: {
+        Authorization: `token ${Config.appId}`,
+        "Content-Type": "application/json"
+      },
+      data: {
+        name: this.state.inventory[0],
+        confirm: 'yes'
+      }
+    })
+    .then(res => {
+      console.log(res)
+    })
+    .catch(err => {
+      console.log("errors", err.response);
+    });
+  }
 
-    let player = new Player('Mario', this.state.currentRoom)
+  seeInventory =() => {
+    axios({
+      url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/status/',
+      method: 'POST', 
+      headers: {
+        Authorization: `token ${Config.appId}`,
+        "Content-Type": "application/json"
+      }
+    })
+    .then(res => {
+      this.setState({
+        inventory: res.data.inventory,
+        gold: res.data.gold,
+        name: res.data.name
+      })
+    })
+    .catch(err => {
+      console.log("errors", err.response);
+    });
+  }
 
-    console.log('Player current room', player.state.current_room, 'Player name', player.state.name, 'Current room ID', player.state.current_room.id)
-    
-    mapGraph[player.state.current_room.id] = player.state.current_room;
-    
-    roomsDictionary[player.state.current_room.id] = player.state.current_room.get_exits();
+  changeName = () => {
+    axios({
+      url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/change_name/',
+      method: 'POST',
+      headers: {
+        Authorization: `token ${Config.appId}`,
+        "Content-Type": "application/json"
+      },
+      data: {
+        name: 'Itel',
+        confirm: 'aye'
+      }
+    })
+    .then(res => {
+      console.log(res)
+    })
+    .catch(err => {
+      console.log("errors", err.response);
+    });
+  }
 
-    if (roomsDictionary[player.state.current_room.id].length === 0) {
-      console.log('EXITS!!!!!', this.state.exits)
-      roomsDictionary[player.state.current_room.id] = this.state.exits;
-    }
-    
-    console.log('ROOOOM DICTIONARY', roomsDictionary)
-  
+  // MINER
 
-        if (!(player.state.current_room.id in Object.keys(roomsDictionary))) {
-          roomsDictionary[player.state.current_room.id] = player.state.current_room.get_exits();
-          mapGraph[player.state.current_room.id] = player.state.current_room;
-          console.log('MAPGRAPH KEY in IF', roomsDictionary[player.state.current_room.id])
-          // let prevRoom = reversedPath.pop();
+  mineCoin = () => {
+    if (this.state.currentRoom.id === 250) {
+      let prevBlock = "";
+      axios({
+        url: 'https://lambda-treasure-hunt.herokuapp.com/api/bc/last_proof/',
+        method: 'GET',
+        headers: {
+          Authorization: `token ${Config.appId}`,
+          "Content-Type": "application/json"
+        },
+      })
+        .then(res => {
+          console.log(res.data);
+          let difficulty = res.data.difficulty;
+          prevBlock = JSON.stringify(res.data.proof);
           
-          roomsDictionary[player.state.current_room.id].splice(0);
-
-          while (Object.keys(mapGraph[player.state.current_room.id]) === 0) {
-            let reverseDirection = reversedPath.pop();
-            traversalPath.push(reverseDirection);
-            this.move(reverseDirection)
+          let p = 550867667;
+          while (this.test_proof(prevBlock, p, difficulty) !== true) {
+            if (p % 10000 === 0) {
+              console.log("p is now", p);
+            }
+            p = Math.floor(Math.random() * 1000000000);
           }
-  
-          let exit_direction = roomsDictionary[Object.keys(roomsDictionary[player.state.current_room.id])[0]];
-          console.log('EXIT DIRECTION', exit_direction)
-          traversalPath.push(exit_direction);
-          reversedPath.push(oppositeDirection[exit_direction])
-          this.move(exit_direction)
-        }
+          console.log("proof", p);
+          this.setState({
+            proof: p
+          })
+          console.log('PROOF FROM STATE', this.state.proof)
+          setTimeout(() => {
+            axios.post('https://lambda-treasure-hunt.herokuapp.com/api/bc/mine/', {proof: p}, authHeader)
+              .then(res => {
+                this.setState({
+                  transaction: res.data
+                })
+                console.log(res)
+              }
+                )
+              .catch(err => console.log(err));
+          }, 1000);
+        })
+        .catch(err => console.log(err));
+    }
+  };
 
-      console.log('mapGraph', mapGraph);
+  test_proof = (block_string, proof, difficulty) => {
+    let guess = `${block_string}${proof}`;
+    let guessHash = this.hash(guess);
+    if (proof % 10000 === 0) {
+      console.log("guessHash", guessHash);
+      this.setState({
+        guess: guessHash
+      })
     }
 
-    setInterval(map, 7000)
+    let startString = "";
+    for (let i = 0; i < difficulty; i++) {
+      startString += 0;
+    }
+
+    return guessHash.slice(0, difficulty) === startString;
+  };
+
+  hash = string => {
+    return shajs("sha256")
+      .update(string)
+      .digest("hex");
   };
 
   render() {
     return (
       <div>
         <div>
-          <p>Room ID: {this.state.currentRoom.room_id}</p>
+          <p>Room ID: {this.state.currentRoom.id}</p>
           <p>Title: {this.state.currentRoom.title}</p>
           <p>Description: {this.state.currentRoom.description}</p>
           <p>Coordinates: {this.state.currentRoom.coordinates}</p>
           <p>Possible Exits: {this.state.currentRoom.exits}</p>
-          <p>cooldown: {this.state.currentRoom.cooldown}</p>
+          <p>cooldown: {this.state.cooldown}</p>
+          <p>Available Items: {this.state.itemsInRoom}</p>
+          <p>inventory: {this.state.inventory}</p>
+          <p>Gold: {this.state.gold}</p>
+          <p>Player name: {this.state.name}</p>
         </div>
         <div>
           <button
@@ -228,7 +320,11 @@ class World extends React.Component {
           >
             West
           </button>
-          <button onClick={() => this.createMap()}>CREATE MAP</button>
+          <button onClick={() => this.pickUpItems()}>Pick up item</button>
+          <button onClick={() => this.seeInventory()}>See inventory</button>
+          <button onClick={() => this.sellItems()}>Sell items</button>
+          <button onClick={() => this.changeName()}>Change Name!</button>
+          <button onClick={() => this.mineCoin()}>MINE!!</button>
         </div>
       </div>
     );
