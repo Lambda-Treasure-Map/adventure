@@ -194,7 +194,7 @@ class World extends React.Component {
         "Content-Type": "application/json"
       },
       data: {
-        name: 'Mario',
+        name: 'Itel',
         confirm: 'aye'
       }
     })
