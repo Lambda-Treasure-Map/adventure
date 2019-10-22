@@ -13,7 +13,7 @@ function App() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          Learn React
+          Lambda Treasure Map Adventure
         </a>
       </header>
     </div>
